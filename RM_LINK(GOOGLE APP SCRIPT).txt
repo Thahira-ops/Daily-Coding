@@ -1,0 +1,39 @@
+RM_LINK(GOOGLE APP SCRIPT):
+
+function doPost(e) {
+  try {
+    const folderId = '1wfCiSR9gFQnS52qvsZnZ-syRA-hEff0W'; 
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Sheet1'); 
+
+    const photoData = e.parameter.photo;
+    const filename = e.parameter.filename || `Photo_${new Date().toISOString()}.jpg`;
+    const mimetype = e.parameter.mimetype || 'image/jpeg';
+
+    if (!photoData) {
+      throw new Error("❌ No image data received.");
+    }
+
+    //  Base64 string converting
+    const decoded = Utilities.base64Decode(photoData);
+    const blob = Utilities.newBlob(decoded, mimetype, filename);
+
+    // drive la save aaganum
+    const folder = DriveApp.getFolderById(folderId);
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const publicUrl = file.getUrl();
+
+    // sheets la show aaganum
+    sheet.appendRow([new Date(), filename, publicUrl]);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'success', url: publicUrl }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'error', message: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
